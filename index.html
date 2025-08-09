@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Face Feature Analyzer</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%);
+            min-height: 100vh;
+            color: #1a1a1a;
+            line-height: 1.6;
+            font-weight: 400;
+            overflow-x: hidden;
+        }
+
+        /* Splash Screen Styles */
+        .splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 30%, #e2e8f0 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+        }
+
+        .splash-screen.fade-out {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .splash-logo {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 32px;
+            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.3);
+            animation: logoFloat 3s ease-in-out infinite;
+        }
+
+        .splash-logo::before {
+            content: '🤖';
+            font-size: 48px;
+            animation: logoRotate 4s linear infinite;
+        }
+
+        .splash-title {
+            font-size: 2.5rem;
+            font-weight: 300;
+            color: #1a1a1a;
+            margin-bottom: 16px;
+            letter-spacing: -0.02em;
+            text-align: center;
+            animation: titleSlideUp 1s ease-out 0.5s both;
+        }
+
+        .splash-subtitle {
+            font-size: 1.1rem;
+            color: #64748b;
+            margin-bottom: 48px;
+            text-align: center;
+            animation: titleSlideUp 1s ease-out 0.7s both;
+        }
+
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: titleSlideUp 1s ease-out 0.9s both;
+        }
+
+        .loading-bar {
+            width: 200px;
+            height: 4px;
+            background: #e2e8f0;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .loading-progress {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 2px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .loading-text {
+            font-size: 0.9rem;
+            color: #64748b;
+            font-weight: 400;
+        }
+
+        @keyframes logoFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes logoRotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes titleSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Enhanced Main Content */
+        .main-app {
+            opacity: 0;
+            transition: opacity 0.8s ease;
+        }
+
+        .main-app.show {
+            opacity: 1;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            position: relative;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            height: 200px;
+            background: radial-gradient(ellipse at center, rgba(102, 126, 234, 0.1) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 60px;
+            padding-bottom: 40px;
+            position: relative;
+            z-index: 1;
+        }
+
+        header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 1px;
+            box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 200;
+            color: #1a1a1a;
+            margin-bottom: 16px;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #1a1a1a 0%, #4a5568 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: #64748b;
+            font-size: 1.2rem;
+            font-weight: 300;
+            letter-spacing: 0.01em;
+        }
+
+        .disclaimer {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 24px 32px;
+            margin: 32px 0;
+            text-align: center;
+            color: #64748b;
+            font-size: 0.95rem;
+            font-weight: 400;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .disclaimer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 48px;
+            align-items: start;
+        }
+
+        .video-container {
+            position: relative;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border: 2px solid #e2e8f0;
+            border-radius: 20px;
+            overflow: hidden;
+            aspect-ratio: 4/3;
+            box-shadow: 
+                0 10px 15px -3px rgba(0, 0, 0, 0.1), 
+                0 4px 6px -2px rgba(0, 0, 0, 0.05),
+                0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+            transition: all 0.3s ease;
+        }
+
+        .video-container:hover {
+            box-shadow: 
+                0 20px 25px -5px rgba(0, 0, 0, 0.1), 
+                0 10px 10px -5px rgba(0, 0, 0, 0.04),
+                0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+            transform: translateY(-2px);
+            border-color: #cbd5e1;
+        }
+
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #000;
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .controls {
+            text-align: center;
+            margin-top: 32px;
+        }
+
+        .scan-btn {
+            background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 50px;
+            font-size: 1.05rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 200px;
+            box-shadow: 
+                0 4px 6px -1px rgba(102, 126, 234, 0.3), 
+                0 2px 4px -1px rgba(102, 126, 234, 0.2);
+            letter-spacing: 0.025em;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scan-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .scan-btn:hover::before {
+            left: 100%;
+        }
+
+        .scan-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+            transform: translateY(-3px);
+            box-shadow: 
+                0 10px 15px -3px rgba(102, 126, 234, 0.4), 
+                0 4px 6px -2px rgba(102, 126, 234, 0.3);
+        }
+
+        .scan-btn:disabled {
+            background: linear-gradient(135deg, #e2e8f0 0%, #f1f5f9 100%);
+            color: #94a3b8;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        .sidebar {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border: 1px solid #e2e8f0;
+            border-radius: 24px;
+            padding: 32px;
+            height: fit-content;
+            box-shadow: 
+                0 10px 15px -3px rgba(0, 0, 0, 0.1), 
+                0 4px 6px -2px rgba(0, 0, 0, 0.05),
+                0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sidebar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.3), transparent);
+        }
+
+        .sidebar h2 {
+            font-size: 1.5rem;
+            font-weight: 300;
+            margin-bottom: 28px;
+            color: #1a1a1a;
+            text-align: center;
+            letter-spacing: -0.01em;
+            position: relative;
+        }
+
+        .sidebar h2::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 2px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 1px;
+        }
+
+        .report-item {
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #f1f5f9;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .report-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .report-item:hover {
+            padding-left: 12px;
+            border-left: 3px solid #667eea;
+            background: linear-gradient(90deg, rgba(102, 126, 234, 0.05), transparent);
+            border-radius: 8px;
+        }
+
+        .report-label {
+            font-weight: 500;
+            color: #64748b;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 8px;
+        }
+
+        .report-value {
+            font-size: 1.2rem;
+            color: #1a1a1a;
+            font-weight: 400;
+        }
+
+        .funny-comments {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 28px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .funny-comments::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+        .funny-comments h3 {
+            font-size: 1.05rem;
+            margin-bottom: 16px;
+            color: #64748b;
+            font-weight: 400;
+            letter-spacing: 0.01em;
+        }
+
+        .comment {
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            font-style: italic;
+            color: #475569;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            border-left: 3px solid #cbd5e1;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .comment::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.3s ease;
+        }
+
+        .comment:hover {
+            background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+            border-left-color: #667eea;
+            transform: translateX(4px);
+        }
+
+        .comment:hover::before {
+            left: 100%;
+        }
+
+        .comment:last-child {
+            margin-bottom: 0;
+        }
+
+        .status {
+            text-align: center;
+            margin: 24px 0;
+            padding: 16px 20px;
+            border-radius: 12px;
+            font-weight: 400;
+            font-size: 0.95rem;
+            letter-spacing: 0.01em;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .status.loading {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            color: #1e40af;
+            border: 1px solid #3b82f6;
+        }
+
+        .status.error {
+            background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+            color: #dc2626;
+            border: 1px solid #ef4444;
+        }
+
+        .status.success {
+            background: linear-gradient(135deg, #bbf7d0 0%, #86efac 100%);
+            color: #059669;
+            border: 1px solid #10b981;
+        }
+
+        .scanning-animation {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.95) 0%, rgba(118, 75, 162, 0.95) 100%);
+            color: white;
+            padding: 24px 32px;
+            border-radius: 16px;
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 300;
+            letter-spacing: 0.02em;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 25px -5px rgba(102, 126, 234, 0.4);
+            animation: scanningPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes scanningPulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.05); }
+        }
+
+        .scanning-dots::after {
+            content: '';
+            animation: dots 1.5s infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: ''; }
+            40% { content: '.'; }
+            60% { content: '..'; }
+            80%, 100% { content: '...'; }
+        }
+
+        /* Floating particles animation */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.3; }
+            90% { opacity: 0.3; }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px 16px;
+            }
+            
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            .splash-title {
+                font-size: 2rem;
+            }
+            
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 32px;
+            }
+            
+            .sidebar {
+                order: -1;
+                padding: 24px;
+            }
+            
+            .video-container {
+                border-radius: 16px;
+            }
+            
+            .sidebar {
+                border-radius: 20px;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Splash Screen -->
+    <div id="splashScreen" class="splash-screen">
+        <div class="splash-logo"></div>
+        <h1 class="splash-title">AI Face Feature Analyzer</h1>
+        <p class="splash-subtitle">Initializing advanced facial recognition</p>
+        <div class="loading-container">
+            <div class="loading-bar">
+                <div id="loadingProgress" class="loading-progress"></div>
+            </div>
+            <div id="loadingText" class="loading-text">Loading AI models...</div>
+        </div>
+    </div>
+
+    <!-- Floating Particles -->
+    <div class="particles" id="particles"></div>
+
+    <!-- Main Application -->
+    <div id="mainApp" class="main-app">
+    <div class="container">
+        <header>
+            <h1>AI Face Feature Analyzer</h1>
+            <p class="subtitle">Advanced facial recognition and analysis</p>
+        </header>
+
+        <div class="disclaimer">
+            ⚠️ For entertainment purposes only. No facial data is stored or transmitted.
+        </div>
+
+        <div id="status" class="status loading">Loading AI models...</div>
+
+        <div class="main-content">
+            <div class="video-section">
+                <div class="video-container">
+                    <video id="video" autoplay muted playsinline></video>
+                    <canvas id="canvas"></canvas>
+                    <div id="scanning" class="scanning-animation hidden">
+                        <div class="scanning-dots">Analyzing facial features</div>
+                    </div>
+                </div>
+                <div class="controls">
+                    <button id="scanBtn" class="scan-btn" disabled>Loading Models...</button>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <h2>Face Analysis Report</h2>
+                <div id="report" class="hidden">
+                    <div class="report-item">
+                        <div class="report-label">Face Shape</div>
+                        <div class="report-value" id="faceShape">-</div>
+                    </div>
+                    <div class="report-item">
+                        <div class="report-label">Eyes Detected</div>
+                        <div class="report-value" id="eyeCount">-</div>
+                    </div>
+                    <div class="report-item">
+                        <div class="report-label">Nostrils Detected</div>
+                        <div class="report-value" id="nostrilCount">-</div>
+                    </div>
+                    <div class="report-item">
+                        <div class="report-label">Visible Ears</div>
+                        <div class="report-value" id="earCount">-</div>
+                    </div>
+                    <div class="funny-comments">
+                        <h3>AI Observations</h3>
+                        <div id="comments"></div>
+                    </div>
+                </div>
+                <div id="noReport" class="status">
+                    Click "Scan Face" to begin analysis
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <script>
+        // Create floating particles
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 20;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 6 + 's';
+                particle.style.animationDuration = (Math.random() * 3 + 3) + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        // Splash screen controller
+        class SplashScreen {
+            constructor() {
+                this.progress = 0;
+                this.progressBar = document.getElementById('loadingProgress');
+                this.loadingText = document.getElementById('loadingText');
+                this.splashScreen = document.getElementById('splashScreen');
+                this.mainApp = document.getElementById('mainApp');
+                
+                this.loadingSteps = [
+                    { text: 'Loading AI models...', duration: 1000 },
+                    { text: 'Initializing face detection...', duration: 800 },
+                    { text: 'Setting up camera...', duration: 600 },
+                    { text: 'Calibrating sensors...', duration: 500 },
+                    { text: 'Ready to analyze!', duration: 300 }
+                ];
+                
+                this.currentStep = 0;
+            }
+            
+            start() {
+                this.nextStep();
+            }
+            
+            nextStep() {
+                if (this.currentStep >= this.loadingSteps.length) {
+                    this.complete();
+                    return;
+                }
+                
+                const step = this.loadingSteps[this.currentStep];
+                this.loadingText.textContent = step.text;
+                
+                const targetProgress = ((this.currentStep + 1) / this.loadingSteps.length) * 100;
+                this.animateProgress(targetProgress);
+                
+                setTimeout(() => {
+                    this.currentStep++;
+                    this.nextStep();
+                }, step.duration);
+            }
+            
+            animateProgress(target) {
+                const start = this.progress;
+                const diff = target - start;
+                const duration = 300;
+                const startTime = Date.now();
+                
+                const animate = () => {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    
+                    this.progress = start + (diff * this.easeOutCubic(progress));
+                    this.progressBar.style.width = this.progress + '%';
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    }
+                };
+                
+                animate();
+            }
+            
+            easeOutCubic(t) {
+                return 1 - Math.pow(1 - t, 3);
+            }
+            
+            complete() {
+                setTimeout(() => {
+                    this.splashScreen.classList.add('fade-out');
+                    setTimeout(() => {
+                        this.mainApp.classList.add('show');
+                    }, 400);
+                }, 500);
+            }
+        }
+
+        class FaceAnalyzer {
+            constructor() {
+                this.video = document.getElementById('video');
+                this.canvas = document.getElementById('canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.scanBtn = document.getElementById('scanBtn');
+                this.status = document.getElementById('status');
+                this.modelsLoaded = false;
+                this.detecting = false;
+                this.currentDetections = null;
+                
+                this.faceShapes = ['Oval', 'Round', 'Square', 'Long / Oblong'];
+                this.funnyComments = [
+                    "Your eyebrow game could start a trend.",
+                    "Those eyes have seen some things... probably cat videos.",
+                    "Your nose knows what's up... literally.",
+                    "Face symmetry level: Renaissance painting.",
+                    "Your facial expression says 'I'm ready for my close-up'.",
+                    "Those cheekbones could cut glass... or at least paper.",
+                    "Your smile could power a small city.",
+                    "Face detected: 100% human (we think).",
+                    "Your features suggest you're photogenic from all angles.",
+                    "Warning: Face too attractive for standard analysis.",
+                    "Facial structure indicates high meme potential.",
+                    "Your face has that 'main character energy'."
+                ];
+
+                // Wait for splash screen to complete
+                setTimeout(() => {
+                    this.init();
+                }, 3000);
+            }
+
+            async init() {
+                try {
+                    await this.loadModels();
+                    await this.setupWebcam();
+                    this.setupEventListeners();
+                    this.startDetection();
+                } catch (error) {
+                    this.showError('Failed to initialize: ' + error.message);
+                }
+            }
+
+            async loadModels() {
+                try {
+                    this.status.textContent = 'Loading AI models...';
+                    const modelUrl = 'https://justadudewhohacks.github.io/face-api.js/models';
+                    
+                    await Promise.all([
+                        faceapi.nets.tinyFaceDetector.loadFromUri(modelUrl),
+                        faceapi.nets.faceLandmark68Net.loadFromUri(modelUrl)
+                    ]);
+                    
+                    this.modelsLoaded = true;
+                    this.status.textContent = 'Models loaded successfully!';
+                    this.status.className = 'status success';
+                } catch (error) {
+                    throw new Error('Failed to load face detection models');
+                }
+            }
+
+            async setupWebcam() {
+                try {
+                    this.status.textContent = 'Requesting camera access...';
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: { width: 640, height: 480 }
+                    });
+                    
+                    this.video.srcObject = stream;
+                    
+                    return new Promise((resolve) => {
+                        this.video.onloadedmetadata = () => {
+                            this.canvas.width = this.video.videoWidth;
+                            this.canvas.height = this.video.videoHeight;
+                            resolve();
+                        };
+                    });
+                } catch (error) {
+                    throw new Error('Camera access denied or not available');
+                }
+            }
+
+            setupEventListeners() {
+                this.scanBtn.addEventListener('click', () => this.scanFace());
+                this.scanBtn.disabled = false;
+                this.scanBtn.textContent = 'Scan Face';
+                this.status.textContent = 'Ready to analyze faces!';
+            }
+
+            async startDetection() {
+                if (!this.modelsLoaded) return;
+                
+                this.detecting = true;
+                this.detectFaces();
+            }
+
+            async detectFaces() {
+                if (!this.detecting) return;
+
+                try {
+                    const detections = await faceapi
+                        .detectAllFaces(this.video, new faceapi.TinyFaceDetectorOptions())
+                        .withFaceLandmarks();
+                    
+                    this.currentDetections = detections;
+                    this.drawDetections(detections);
+                } catch (error) {
+                    console.error('Detection error:', error);
+                }
+
+                if (this.detecting) {
+                    requestAnimationFrame(() => this.detectFaces());
+                }
+            }
+
+            drawDetections(detections) {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                if (detections.length > 0) {
+                    detections.forEach(detection => {
+                        const { box } = detection.detection;
+                        
+                        // Draw bounding box
+                        this.ctx.strokeStyle = '#00ff00';
+                        this.ctx.lineWidth = 2;
+                        this.ctx.strokeRect(box.x, box.y, box.width, box.height);
+                        
+                        // Draw landmarks
+                        const landmarks = detection.landmarks.positions;
+                        this.ctx.fillStyle = '#ff0000';
+                        landmarks.forEach(point => {
+                            this.ctx.beginPath();
+                            this.ctx.arc(point.x, point.y, 1, 0, 2 * Math.PI);
+                            this.ctx.fill();
+                        });
+                    });
+                }
+            }
+
+            async scanFace() {
+                if (!this.currentDetections || this.currentDetections.length === 0) {
+                    alert('No face detected! Please position your face in the camera view.');
+                    return;
+                }
+
+                this.scanBtn.disabled = true;
+                this.scanBtn.textContent = 'Scanning...';
+                
+                // Show scanning animation
+                const scanningDiv = document.getElementById('scanning');
+                scanningDiv.classList.remove('hidden');
+                
+                // Simulate 3-second scanning
+                setTimeout(() => {
+                    scanningDiv.classList.add('hidden');
+                    this.generateReport();
+                    this.scanBtn.disabled = false;
+                    this.scanBtn.textContent = 'Scan Again';
+                }, 3000);
+            }
+
+            generateReport() {
+                const detection = this.currentDetections[0];
+                const landmarks = detection.landmarks.positions;
+                
+                // Generate fake but plausible data
+                const faceShape = this.faceShapes[Math.floor(Math.random() * this.faceShapes.length)];
+                
+                // Count features based on landmarks (simplified)
+                const eyeCount = 2; // Always 2 for human faces
+                const nostrilCount = 2; // Always 2 for human faces
+                const earCount = Math.floor(Math.random() * 3); // 0, 1, or 2 visible ears
+                
+                // Generate 1-3 funny comments
+                const numComments = Math.floor(Math.random() * 3) + 1;
+                const selectedComments = [];
+                const availableComments = [...this.funnyComments];
+                
+                for (let i = 0; i < numComments; i++) {
+                    const randomIndex = Math.floor(Math.random() * availableComments.length);
+                    selectedComments.push(availableComments.splice(randomIndex, 1)[0]);
+                }
+                
+                this.displayReport({
+                    faceShape,
+                    eyeCount,
+                    nostrilCount,
+                    earCount,
+                    comments: selectedComments
+                });
+            }
+
+            displayReport(data) {
+                document.getElementById('faceShape').textContent = data.faceShape;
+                document.getElementById('eyeCount').textContent = data.eyeCount;
+                document.getElementById('nostrilCount').textContent = data.nostrilCount;
+                document.getElementById('earCount').textContent = data.earCount;
+                
+                const commentsDiv = document.getElementById('comments');
+                commentsDiv.innerHTML = '';
+                data.comments.forEach(comment => {
+                    const commentDiv = document.createElement('div');
+                    commentDiv.className = 'comment';
+                    commentDiv.textContent = comment;
+                    commentsDiv.appendChild(commentDiv);
+                });
+                
+                document.getElementById('report').classList.remove('hidden');
+                document.getElementById('noReport').classList.add('hidden');
+            }
+
+            showError(message) {
+                this.status.textContent = message;
+                this.status.className = 'status error';
+                this.scanBtn.textContent = 'Error - Refresh Page';
+                this.scanBtn.disabled = true;
+            }
+        }
+
+        // Initialize the application when the page loads
+        window.addEventListener('load', () => {
+            createParticles();
+            const splash = new SplashScreen();
+            splash.start();
+            new FaceAnalyzer();
+        });
+    </script>
+</body>
+</html>
