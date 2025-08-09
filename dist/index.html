@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Face Feature Analyzer</title>
+    <title>AI Face Recognizer</title>
     <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -58,7 +58,7 @@
         }
 
         .splash-logo::before {
-            content: '🤖';
+            content: '😁';
             font-size: 48px;
             animation: logoRotate 4s linear infinite;
         }
@@ -663,15 +663,15 @@
                 <h2>Face Analysis Report</h2>
                 <div id="report" class="hidden">
                     <div class="report-item">
-                        <div class="report-label">Face Shape</div>
+                        <div class="report-label">🫠 Face Shape</div>
                         <div class="report-value" id="faceShape">-</div>
                     </div>
                     <div class="report-item">
-                        <div class="report-label">Eyes Detected</div>
+                        <div class="report-label">👁️ Eyes Detected</div>
                         <div class="report-value" id="eyeCount">-</div>
                     </div>
                     <div class="report-item">
-                        <div class="report-label">Nostrils Detected</div>
+                        <div class="report-label">👃 Nostrils Detected</div>
                         <div class="report-value" id="nostrilCount">-</div>
                     </div>
                     <div class="report-item">
@@ -870,8 +870,8 @@
             setupEventListeners() {
                 this.scanBtn.addEventListener('click', () => this.scanFace());
                 this.scanBtn.disabled = false;
-                this.scanBtn.textContent = 'Scan Face';
-                this.status.textContent = 'Ready to analyze faces!';
+                this.scanBtn.textContent = '📸 Scan Face';
+                this.status.textContent = '✔️ Ready to analyze faces!';
             }
 
             async startDetection() {
@@ -926,12 +926,12 @@
 
             async scanFace() {
                 if (!this.currentDetections || this.currentDetections.length === 0) {
-                    alert('No face detected! Please position your face in the camera view.');
+                    alert('❌ No face detected! Please position your face in the camera view.');
                     return;
                 }
 
                 this.scanBtn.disabled = true;
-                this.scanBtn.textContent = 'Scanning...';
+                this.scanBtn.textContent = '💫 Scanning...';
                 
                 // Show scanning animation
                 const scanningDiv = document.getElementById('scanning');
